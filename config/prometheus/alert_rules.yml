@@ -1,0 +1,30 @@
+groups:
+  - name: http
+    rules:
+      - alert: HTTPDown
+        expr: probe_success == 0
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Instance {{ $labels.instance }} HTTP down"
+          description: "{{ $labels.instance }} has been down for more than 3 minutes."
+
+      - alert: HTTPSlow
+        expr: probe_http_duration_seconds > 1.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Instance {{ $labels.instance }} HTTP slow"
+          description: "{{ $labels.instance }} has been slower than 1.5 seconds for more than 5 minutes."
+  - name: node
+    rules:
+      - alert: NodeDown
+        expr: up == 0
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Instance {{ $labels.instance }} down"
+          description: "{{ $labels.instance }} has been down for more than 3 minutes."

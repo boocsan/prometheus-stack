@@ -1,0 +1,76 @@
+version: "3.10"
+services:
+  prometheus:
+    image: quay.io/prometheus/prometheus:v2.43.0
+    container_name: prometheus
+    networks:
+      - monitoring_network
+    ports:
+      - 9090:9090
+    user: "0:"
+    volumes:
+      - ./data/prometheus:/prometheus
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./config/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.external-url=${PROMETHEUS_WEB_EXTERNAL_URL}"
+    restart: unless-stopped
+  alertmanager:
+    image: quay.io/prometheus/alertmanager:v0.25.0
+    container_name: alertmanager
+    networks:
+      - monitoring_network
+    ports:
+      - 9093:9093
+    volumes:
+      - ./config/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--web.external-url=${ALERTMANAGER_WEB_EXTERNAL_URL}"
+    restart: unless-stopped
+  pushgateway:
+    image: quay.io/prometheus/pushgateway:v1.5.1
+    container_name: pushgateway
+    networks:
+      - monitoring_network
+    ports:
+      - 9091:9091
+    restart: unless-stopped
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:v1.5.0
+    container_name: node_exporter
+    networks:
+      - monitoring_network
+    command:
+      - "--path.rootfs=/host"
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    restart: unless-stopped
+  blackbox_exporter:
+    image: quay.io/prometheus/blackbox-exporter:v0.23.0
+    container_name: blackbox_exporter
+    networks:
+      - monitoring_network
+    volumes:
+      - ./config/blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml
+    restart: unless-stopped
+  grafana:
+    image: grafana/grafana-oss:9.2.15
+    container_name: grafana
+    networks:
+      - monitoring_network
+    ports:
+      - 3000:3000
+    user: "0:"
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+      - ./config/grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./config/grafana/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml
+      - ./config/grafana/dashboards:/etc/grafana/provisioning/dashboards/dashboards
+      - ./config/grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+    restart: unless-stopped
+
+networks:
+  monitoring_network:
